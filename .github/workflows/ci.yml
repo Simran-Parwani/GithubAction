@@ -1,35 +1,49 @@
-name: Node.js CI and Push NPM
+name: Build and Push Package
 
-on: [push, pull_request]
+on:
+  push:
+    branches:
+      - main
 
-permissions:  
-  id-token: write  # This is required for requesting the JWT  
-  contents: read   # This is required for actions/checkout  
+permissions:
+  id-token: write  # Needed for OIDC authentication
+  contents: read   # Needed for actions/checkout
 
 jobs:
-  build:
+  build-and-push:
     runs-on: ubuntu-latest
     steps:
-      - name: Checkout repository
+      - name: Checkout Repository
         uses: actions/checkout@v3
 
       - name: Setup Node.js
         uses: actions/setup-node@v3
         with:
-          node-version: "18" 
+          node-version: "18"
 
-      - name: Install dependencies
+      - name: Install Dependencies
         run: npm install
 
-      - name: Debug OIDC Token
-        run: |
-          echo "ACTIONS_ID_TOKEN_REQUEST_URL: $ACTIONS_ID_TOKEN_REQUEST_URL"
-          echo "ACTIONS_ID_TOKEN_REQUEST_TOKEN: $ACTIONS_ID_TOKEN_REQUEST_TOKEN"
+      - name: Build Package
+        run: npm pack
 
       - name: Request OIDC Token
         run: |
-          value=$(curl -H "Authorization: bearer $ACTIONS_ID_TOKEN_REQUEST_TOKEN" "$ACTIONS_ID_TOKEN_REQUEST_URL&audience=api://AzureADTokenExchange" | jq '.value')
-          token=$(curl -X POST -H "Content-Type: application/json" -d "{\"oidc_token\":$value, \"service_slug\":\"access-Q5D3\"}" https://api.cloudsmith.io/openid/simran-parwani-OO6R/ | jq -r '.token')
-          curl --request GET --url https://api.cloudsmith.io/v1/user/self/ --header "X-Api-Key:Bearer $token" --header 'accept: application/json'
+          value=$(curl -H "Authorization: bearer $ACTIONS_ID_TOKEN_REQUEST_TOKEN" \
+            "$ACTIONS_ID_TOKEN_REQUEST_URL&audience=api://AzureADTokenExchange" | jq '.value')
+
+          token=$(curl -X POST -H "Content-Type: application/json" \
+            -d "{\"oidc_token\":$value, \"service_slug\":\"your-service-slug\"}" \
+            https://api.cloudsmith.io/openid/your-cloudsmith-namespace/ | jq -r '.token')
 
           echo "CLOUDSMITH_API_KEY=$token" >> $GITHUB_ENV
+
+      - name: Push to Cloudsmith
+        uses: cloudsmith-io/action@v4
+        with:
+          api-key: ${{ env.CLOUDSMITH_API_KEY }}
+          command: "push"
+          format: "npm"
+          owner: "your-cloudsmith-owner"
+          repo: "your-cloudsmith-repo"
+          file: "*.tgz"
