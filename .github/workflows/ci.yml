@@ -38,12 +38,4 @@ jobs:
 
           echo "CLOUDSMITH_API_KEY=$token" >> $GITHUB_ENV
 
-      - name: Push to Cloudsmith
-        uses: cloudsmith-io/action@v4
-        with:
-          api-key: ${{ env.CLOUDSMITH_API_KEY }}
-          command: "push"
-          format: "npm"
-          owner: "your-cloudsmith-owner"
-          repo: "your-cloudsmith-repo"
-          file: "*.tgz"
+    
