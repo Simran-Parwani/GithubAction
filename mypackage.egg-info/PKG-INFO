@@ -1,0 +1,18 @@
+Metadata-Version: 2.2
+Name: mypackage
+Version: 0.1.0
+Summary: A sample Python package
+Home-page: https://github.com/yourname/mypackage
+Author: Your Name
+Author-email: your@email.com
+Classifier: Programming Language :: Python :: 3
+Classifier: License :: OSI Approved :: MIT License
+Classifier: Operating System :: OS Independent
+Dynamic: author
+Dynamic: author-email
+Dynamic: classifier
+Dynamic: description
+Dynamic: home-page
+Dynamic: summary
+
+This is a sample Python package for demo purposes.
