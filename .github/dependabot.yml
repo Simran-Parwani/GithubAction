@@ -2,7 +2,7 @@ version: 2
 registries:
   cloudsmith:
     type: docker-registry
-    url: https://dl.cloudsmith.io/basic/simran-parwani-testorg/docker/docker/
+    url: https://docker.cloudsmith.io/
     username: "${{ secrets.CLOUDSMITH_USER_NAME }}"
     password: "${{ secrets.CLOUDSMITH_API_KEY }}"
     replaces-base: true
