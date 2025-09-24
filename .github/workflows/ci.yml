@@ -1,40 +1,26 @@
-name: Build and Push Package
+name: Push Docker Image to Cloudsmith
 
 on:
-  push:
-    branches:
-      - main
-
-permissions:
-  id-token: write  # Needed for OIDC authentication
-  contents: read   # Needed for actions/checkout
+  workflow_dispatch:
 
 jobs:
-  build-and-push:
+  push-to-cloudsmith:
     runs-on: ubuntu-latest
+
     steps:
-      - name: Checkout Repository
+      - name: Checkout repo
         uses: actions/checkout@v3
 
-      - name: Get OIDC token
+      - name: Build Helm chart
+        shell: bash
+        working-directory: helm/alpacka
         run: |
-          value=$(curl -H "Authorization: bearer $ACTIONS_ID_TOKEN_REQUEST_TOKEN" "$ACTIONS_ID_TOKEN_REQUEST_URL&audience=api://AzureADTokenExchange" | jq '.value')
-          token=$(curl -X POST -H "Content-Type: application/json" -d "{\"oidc_token\":$value, \"service_slug\":\"access\"}" https://api.cloudsmith.io/openid/simran-parwani-OO6R/ | jq -r '.token')
-          curl --request GET --url https://api.cloudsmith.io/v1/user/self/ --header "X-Api-Key:Bearer $token" --header 'accept: application/json'
-                    
-          echo "CLOUDSMITH_API_KEY=$token" >> $GITHUB_ENV
+          helm dependency update
+          helm package . --version 0.0.1 --app-version 0.0.1
 
-      - name: Debug OIDC Token
+      - name: Push to Cloudsmith
+        shell: bash
+        working-directory: helm/alpacka
         run: |
-            echo "ACTIONS_ID_TOKEN_REQUEST_URL: $ACTIONS_ID_TOKEN_REQUEST_URL"
-            echo "ACTIONS_ID_TOKEN_REQUEST_TOKEN: $ACTIONS_ID_TOKEN_REQUEST_TOKEN"      
-
-      - name: Cloudsmith Push Python Package
-        uses: cloudsmith-io/action@v0.5.3
-        with:
-          command: 'push'
-          format: 'python'
-          owner: 'simran-parwani-OO6R'             # Your Cloudsmith account name or org name (namespace)
-          repo: 'maven'         # Your Cloudsmith Repository name (slug)
-          republish: 'true'          # needed if version is not changing
-          file: 'dist/mypackage-0.1.0-py3-none-any.whl'
+          echo "${{ secrets.CLOUDSMITH_API_KEY }}" | helm registry login helm.oci.cloudsmith.io --username simran-parwani --password-stdin
+          helm push alpacka-0.0.1.tgz oci://helm.oci.cloudsmith.io/simran-parwani-testorg/helm
